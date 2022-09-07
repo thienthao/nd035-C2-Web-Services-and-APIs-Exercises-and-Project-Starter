@@ -8,7 +8,7 @@ import com.udacity.vehicles.domain.car.Car;
 import com.udacity.vehicles.domain.car.Details;
 import com.udacity.vehicles.domain.manufacturer.Manufacturer;
 import com.udacity.vehicles.service.CarService;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,9 +24,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.net.URI;
 import java.util.Collections;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -52,13 +56,14 @@ public class CarControllerTest {
 
     @MockBean
     private MapsClient mapsClient;
+    private static Car car;
 
     /**
      * Creates pre-requisites for testing, such as an example car.
      */
-    @BeforeAll
+    @BeforeEach
     public void setup() {
-        Car car = getCar();
+        car = getCar();
         car.setId(1L);
         given(carService.save(any())).willReturn(car);
         given(carService.findById(any())).willReturn(car);
@@ -67,60 +72,108 @@ public class CarControllerTest {
 
     /**
      * Tests for successful creation of new car in the system
+     *
      * @throws Exception when car creation fails in the system
      */
     @Test
     public void createCar() throws Exception {
-        Car car = getCar();
         mvc.perform(
-                post(new URI("/cars"))
-                        .content(json.write(car).getJson())
-                        .contentType(MediaType.APPLICATION_JSON_UTF8)
-                        .accept(MediaType.APPLICATION_JSON_UTF8))
+                        post(new URI("/cars"))
+                                .content(json.write(car).getJson())
+                                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                                .accept(MediaType.APPLICATION_JSON_UTF8))
                 .andExpect(status().isCreated());
     }
 
     /**
      * Tests if the read operation appropriately returns a list of vehicles.
+     *
      * @throws Exception if the read operation of the vehicle list fails
      */
     @Test
     public void listCars() throws Exception {
-        /**
-         * TODO: Add a test to check that the `get` method works by calling
-         *   the whole list of vehicles. This should utilize the car from `getCar()`
-         *   below (the vehicle will be the first in the list).
-         */
-
+        mvc.perform(get(new URI("/cars")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.carList", hasSize(1)))
+                .andExpect(jsonPath("$._embedded.carList[0].id")
+                        .value(1L))
+                .andExpect(jsonPath("$._embedded.carList[0].condition")
+                        .value(car.getCondition().toString()))
+                .andExpect(jsonPath("$._embedded.carList[0].details.body")
+                        .value(car.getDetails().getBody()))
+                .andExpect(jsonPath("$._embedded.carList[0].details.model")
+                        .value(car.getDetails().getModel()))
+                .andExpect(jsonPath("$._embedded.carList[0].details.manufacturer.code")
+                        .value(car.getDetails().getManufacturer().getCode()))
+                .andExpect(jsonPath("$._embedded.carList[0].details.manufacturer.name")
+                        .value(car.getDetails().getManufacturer().getName()))
+                .andExpect(jsonPath("$._embedded.carList[0].details.numberOfDoors")
+                        .value(car.getDetails().getNumberOfDoors()))
+                .andExpect(jsonPath("$._embedded.carList[0].details.fuelType")
+                        .value(car.getDetails().getFuelType()))
+                .andExpect(jsonPath("$._embedded.carList[0].details.engine")
+                        .value(car.getDetails().getEngine()))
+                .andExpect(jsonPath("$._embedded.carList[0].details.mileage")
+                        .value(car.getDetails().getMileage()))
+                .andExpect(jsonPath("$._embedded.carList[0].details.modelYear")
+                        .value(car.getDetails().getModelYear()))
+                .andExpect(jsonPath("$._embedded.carList[0].details.productionYear")
+                        .value(car.getDetails().getProductionYear()))
+                .andExpect(jsonPath("$._embedded.carList[0].details.externalColor")
+                        .value(car.getDetails().getExternalColor()))
+                .andReturn();
     }
 
     /**
      * Tests the read operation for a single car by ID.
+     *
      * @throws Exception if the read operation for a single car fails
      */
     @Test
     public void findCar() throws Exception {
-        /**
-         * TODO: Add a test to check that the `get` method works by calling
-         *   a vehicle by ID. This should utilize the car from `getCar()` below.
-         */
+        mvc.perform(get(new URI("/cars/1")))
+                .andExpect(jsonPath("id").value(1))
+                .andExpect(jsonPath("condition")
+                        .value(car.getCondition().toString()))
+                .andExpect(jsonPath("details.body")
+                        .value(car.getDetails().getBody()))
+                .andExpect(jsonPath("details.model")
+                        .value(car.getDetails().getModel()))
+                .andExpect(jsonPath("details.manufacturer.code")
+                        .value(car.getDetails().getManufacturer().getCode()))
+                .andExpect(jsonPath("details.manufacturer.name")
+                        .value(car.getDetails().getManufacturer().getName()))
+                .andExpect(jsonPath("details.numberOfDoors")
+                        .value(car.getDetails().getNumberOfDoors()))
+                .andExpect(jsonPath("details.fuelType")
+                        .value(car.getDetails().getFuelType()))
+                .andExpect(jsonPath("details.engine")
+                        .value(car.getDetails().getEngine()))
+                .andExpect(jsonPath("details.mileage")
+                        .value(car.getDetails().getMileage()))
+                .andExpect(jsonPath("details.modelYear")
+                        .value(car.getDetails().getModelYear()))
+                .andExpect(jsonPath("details.productionYear")
+                        .value(car.getDetails().getProductionYear()))
+                .andExpect(jsonPath("details.externalColor")
+                        .value(car.getDetails().getExternalColor()))
+                .andReturn();
     }
 
     /**
      * Tests the deletion of a single car by ID.
+     *
      * @throws Exception if the delete operation of a vehicle fails
      */
     @Test
     public void deleteCar() throws Exception {
-        /**
-         * TODO: Add a test to check whether a vehicle is appropriately deleted
-         *   when the `delete` method is called from the Car Controller. This
-         *   should utilize the car from `getCar()` below.
-         */
+        mvc.perform(delete(new URI("/cars/1")))
+                .andExpect(status().isNoContent());
     }
 
     /**
      * Creates an example Car object for use in testing.
+     *
      * @return an example Car object
      */
     private Car getCar() {
